@@ -73,7 +73,6 @@ export default function Page() {
     }
   }, []);
 
-  // ── TASTIERA ──────────────────────────────────────────────────────────────
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (uiRef.current === "subpage") return;
@@ -84,7 +83,6 @@ export default function Page() {
     return () => window.removeEventListener("keydown", onKey);
   }, [goForward, goBack]);
 
-  // ── TOUCH (mobile) ────────────────────────────────────────────────────────
   const touchStartX = useRef<number>(0);
   const touchStartY = useRef<number>(0);
   const touchStartTarget = useRef<EventTarget | null>(null);
@@ -98,7 +96,6 @@ export default function Page() {
 
     const onTouchEnd = (e: TouchEvent) => {
       if (uiRef.current === "subpage") return;
-      // ignora se il touch è partito da una card o bottone
       const target = touchStartTarget.current as HTMLElement | null;
       if (target && (target.closest(".card") || target.closest(".mob-btn") || target.closest(".sub-close"))) return;
 
@@ -120,7 +117,6 @@ export default function Page() {
     };
   }, [goForward, goBack]);
 
-  // ── SOTTOPAGINE ───────────────────────────────────────────────────────────
   const openSub = (page: SubPageType) => { setUIBoth("subpage"); setActiveSub(page); };
   const closeSub = () => { setUIBoth("spheres"); setActiveSub(null); setUIV(true); };
 
@@ -182,9 +178,7 @@ export default function Page() {
         .card:hover .card__cta { color:rgba(125,244,255,0.75); }
 
         /* contenitore mobile per le sfere */
-        .spheres-mobile-row {
-          display: contents;
-        }
+        .spheres-mobile-row { display: contents; }
 
         /* PORTRAIT mobile — mostra overlay "ruota il dispositivo" */
         .rotate-hint { display: none; }
@@ -202,34 +196,18 @@ export default function Page() {
             backdrop-filter: blur(8px);
             pointer-events: none;
           }
-          .rotate-hint__icon {
-            font-size: 3rem;
-            animation: rotateAnim 2.5s ease-in-out infinite;
-          }
+          .rotate-hint__icon { font-size: 3rem; animation: rotateAnim 2.5s ease-in-out infinite; }
           @keyframes rotateAnim {
             0%   { transform: rotate(0deg); }
             40%  { transform: rotate(90deg); }
             60%  { transform: rotate(90deg); }
             100% { transform: rotate(0deg); }
           }
-          .rotate-hint__text {
-            font-family: 'Rajdhani', sans-serif;
-            font-size: 0.65rem;
-            letter-spacing: 0.38em;
-            color: rgba(125,244,255,0.6);
-            text-transform: uppercase;
-            text-align: center;
-          }
-          .rotate-hint__sub {
-            font-family: 'Cormorant Garamond', serif;
-            font-style: italic;
-            font-size: 1rem;
-            color: rgba(255,255,255,0.3);
-            text-align: center;
-          }
+          .rotate-hint__text { font-family:'Rajdhani',sans-serif; font-size:0.65rem; letter-spacing:0.38em; color:rgba(125,244,255,0.6); text-transform:uppercase; text-align:center; }
+          .rotate-hint__sub { font-family:'Cormorant Garamond',serif; font-style:italic; font-size:1rem; color:rgba(255,255,255,0.3); text-align:center; }
         }
 
-        /* LANDSCAPE mobile — copre tutti i telefoni reali (fino a ~900px di altezza in landscape) */
+        /* LANDSCAPE mobile */
         @media (hover: none) and (pointer: coarse) and (orientation: landscape) {
           .spheres-mobile-row {
             display: flex;
@@ -303,17 +281,29 @@ export default function Page() {
           .pulse-hint { bottom:calc(5.5vh + 40px); }
           .nav-hint   { bottom:calc(5vh + 40px); }
           .back-hint  { bottom:calc(5vh + 40px); }
-          .post-nav   { margin-top:4vh; }
+          .post-nav   { margin-top:2vh; }
         }
 
-        /* POST-COLLISIONE su mobile landscape: testo ridotto per stare tutto in schermo */
+        /* POST-COLLISIONE su mobile landscape:
+           inset: 0 0 40px 0 taglia il container SOPRA la mobile-bar (40px),
+           così align-items:center centra nel vero spazio visibile.
+           I font scalano su vh perché in landscape l'altezza è il vincolo reale. */
         @media (hover: none) and (pointer: coarse) and (orientation: landscape) {
-          .post-wrap { padding: 0 6vw; padding-bottom: 48px; }
-          .post-block { max-width: 90vw; gap: 0; }
-          .post-question { font-size: clamp(1.1rem, 3.2vh, 2rem); line-height: 1.18; }
-          .post-question-break { height: clamp(0.5rem, 1.2vh, 1rem); }
-          .post-question-small { font-size: clamp(0.85rem, 2.2vh, 1.4rem); margin-top: clamp(0.4rem, 1vh, 0.8rem); }
-          .post-nav { margin-top: 1.5vh; font-size: 0.5rem; }
+          .post-wrap {
+            inset: 0 0 40px 0 !important;
+            padding: 0 8vw !important;
+          }
+          .post-block { max-width: 90vw !important; }
+          .post-question {
+            font-size: clamp(0.95rem, 4vh, 1.55rem) !important;
+            line-height: 1.2 !important;
+          }
+          .post-question-break { height: clamp(0.25rem, 1.2vh, 0.6rem) !important; }
+          .post-question-small {
+            font-size: clamp(0.75rem, 2.8vh, 1.05rem) !important;
+            margin-top: clamp(0.25rem, 0.8vh, 0.5rem) !important;
+          }
+          .post-nav { margin-top: 1.5vh !important; font-size: 0.5rem !important; }
         }
       `}</style>
 
@@ -485,7 +475,6 @@ export default function Page() {
           </div>
         )}
 
-        {/* Overlay portrait-only: visibile solo via CSS su mobile portrait */}
         <div className="rotate-hint">
           <span className="rotate-hint__icon">📱</span>
           <span className="rotate-hint__text">Ruota il dispositivo</span>

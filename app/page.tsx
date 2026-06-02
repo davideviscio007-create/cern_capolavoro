@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useRef, useState, useCallback } from "react";
 
-// ── TIPI ──────────────────────────────────────────────────────────────────────
 type UIState = "intro" | "playing-zoom" | "spheres" | "playing-rewind" | "oblique" | "playing-collision" | "postcollision" | "subpage";
 type SubPageType = "cern" | "orchestra" | "pallavolo";
 
@@ -17,30 +16,19 @@ export default function Page() {
     setUI(state);
   };
 
-  // ── GESTIONE FINE VIDEO ───────────────────────────────────────────────────
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
-    
     const onEnded = () => {
       const current = uiRef.current;
-      if (current === "playing-zoom") {
-        setUIBoth("spheres");
-        setUIV(true);
-      } else if (current === "playing-rewind") {
-        setUIBoth("oblique");
-        setUIV(true);
-      } else if (current === "playing-collision") {
-        setUIBoth("postcollision");
-        setUIV(true);
-      }
+      if (current === "playing-zoom") { setUIBoth("spheres"); setUIV(true); }
+      else if (current === "playing-rewind") { setUIBoth("oblique"); setUIV(true); }
+      else if (current === "playing-collision") { setUIBoth("postcollision"); setUIV(true); }
     };
-    
     video.addEventListener("ended", onEnded);
     return () => video.removeEventListener("ended", onEnded);
   }, []);
 
-  // ── AVVIA VIDEO ───────────────────────────────────────────────────────────
   const playVideo = useCallback((src: string, newState: UIState) => {
     const video = videoRef.current;
     if (!video) return;
@@ -50,64 +38,40 @@ export default function Page() {
     setUIBoth(newState);
   }, []);
 
-  // ── AVANTI (SPAZIO / TAP) ───────────────────────────────────────────────────
   const goForward = useCallback(() => {
     const current = uiRef.current;
     if (current === "subpage") return;
-    
-    if (current === "intro") {
-      setUIV(false);
-      setTimeout(() => playVideo("/videos/zoom.mp4", "playing-zoom"), 400);
-    }
-    if (current === "spheres") {
-      setUIV(false);
-      setTimeout(() => playVideo("/videos/rewind.mp4", "playing-rewind"), 300);
-    }
-    if (current === "oblique") {
-      setUIV(false);
-      setTimeout(() => playVideo("/videos/collision.mp4", "playing-collision"), 300);
-    }
+    if (current === "intro") { setUIV(false); setTimeout(() => playVideo("/videos/zoom.mp4", "playing-zoom"), 400); }
+    if (current === "spheres") { setUIV(false); setTimeout(() => playVideo("/videos/rewind.mp4", "playing-rewind"), 300); }
+    if (current === "oblique") { setUIV(false); setTimeout(() => playVideo("/videos/collision.mp4", "playing-collision"), 300); }
   }, [playVideo]);
 
-  // ── INDIETRO (←) ─────────────────────────────────────────────────────────
   const goBack = useCallback(() => {
     const current = uiRef.current;
     if (current === "subpage") return;
-    
     const video = videoRef.current;
     if (current === "spheres") {
       setUIV(false);
       setTimeout(() => {
-        if (video) { 
-          video.src = "/videos/zoom.mp4"; 
-          video.currentTime = video.duration || 9999; 
-        }
-        playVideo("/videos/zoom.mp4", "playing-zoom");
-        if (video) {
-          video.pause();
-          video.src = "";
-        }
-        setUIBoth("intro");
-        setUIV(true);
+        if (video) { video.pause(); video.src = ""; }
+        setUIBoth("intro"); setUIV(true);
       }, 300);
     }
     if (current === "oblique") {
       setUIV(false);
       setTimeout(() => {
         if (video) { video.pause(); video.src = ""; }
-        setUIBoth("spheres");
-        setUIV(true);
+        setUIBoth("spheres"); setUIV(true);
       }, 300);
     }
     if (current === "postcollision") {
       setUIV(false);
       setTimeout(() => {
         if (video) { video.pause(); video.src = ""; }
-        setUIBoth("oblique");
-        setUIV(true);
+        setUIBoth("oblique"); setUIV(true);
       }, 300);
     }
-  }, [playVideo]);
+  }, []);
 
   // ── TASTIERA ──────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -123,23 +87,27 @@ export default function Page() {
   // ── TOUCH (mobile) ────────────────────────────────────────────────────────
   const touchStartX = useRef<number>(0);
   const touchStartY = useRef<number>(0);
+  const touchStartTarget = useRef<EventTarget | null>(null);
 
   useEffect(() => {
     const onTouchStart = (e: TouchEvent) => {
       touchStartX.current = e.touches[0].clientX;
       touchStartY.current = e.touches[0].clientY;
+      touchStartTarget.current = e.target;
     };
 
     const onTouchEnd = (e: TouchEvent) => {
       if (uiRef.current === "subpage") return;
+      // ignora se il touch è partito da una card o bottone
+      const target = touchStartTarget.current as HTMLElement | null;
+      if (target && (target.closest(".card") || target.closest(".mob-btn") || target.closest(".sub-close"))) return;
+
       const dx = e.changedTouches[0].clientX - touchStartX.current;
       const dy = Math.abs(e.changedTouches[0].clientY - touchStartY.current);
-      // swipe orizzontale (almeno 60px, non verticale)
       if (Math.abs(dx) > 60 && dy < 60) {
-        if (dx < 0) goForward();  // swipe sinistra → avanti
-        else goBack();            // swipe destra → indietro
+        if (dx < 0) goForward();
+        else goBack();
       } else if (Math.abs(dx) < 15 && dy < 15) {
-        // tap semplice → avanti
         goForward();
       }
     };
@@ -153,22 +121,14 @@ export default function Page() {
   }, [goForward, goBack]);
 
   // ── SOTTOPAGINE ───────────────────────────────────────────────────────────
-  const openSub = (page: SubPageType) => {
-    setUIBoth("subpage");
-    setActiveSub(page);
-  };
-  const closeSub = () => {
-    setUIBoth("spheres");
-    setActiveSub(null);
-    setUIV(true);
-  };
+  const openSub = (page: SubPageType) => { setUIBoth("subpage"); setActiveSub(page); };
+  const closeSub = () => { setUIBoth("spheres"); setActiveSub(null); setUIV(true); };
 
-  // ── IMMAGINE DI SFONDO CORRENTE ───────────────────────────────────────────
   const bgImage = () => {
-    if (ui === "intro" || ui === "playing-zoom")           return "/images/intro.jpg";
+    if (ui === "intro" || ui === "playing-zoom") return "/images/intro.jpg";
     if (ui === "spheres" || ui === "playing-rewind" || ui === "subpage") return "/images/sfere.jpg";
-    if (ui === "oblique" || ui === "playing-collision")    return "/images/oblique.jpg";
-    if (ui === "postcollision")                             return "/images/final.jpg";
+    if (ui === "oblique" || ui === "playing-collision") return "/images/oblique.jpg";
+    if (ui === "postcollision") return "/images/final.jpg";
     return "/images/intro.jpg";
   };
 
@@ -180,215 +140,101 @@ export default function Page() {
     <>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400;1,600;1,700&family=Rajdhani:wght@300;400;500;600;700&display=swap');
-        
         *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
         html, body { background:#000; overflow:hidden; width:100vw; height:100vh; }
         .scene { position:fixed; inset:0; width:100vw; height:100vh; }
-        
-        /* ── SFONDO IMMAGINE ── */
-        .bg-image {
-          position:absolute; inset:0;
-          width:100%; height:100%;
-          object-fit:cover;
-          transition: transform 1.5s cubic-bezier(0.2, 0.8, 0.2, 1), filter 1s ease, opacity 0.4s ease;
-          z-index:0;
-        }
+        .bg-image { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; transition: transform 1.5s cubic-bezier(0.2, 0.8, 0.2, 1), filter 1s ease, opacity 0.4s ease; z-index:0; }
         .bg-image--shifted { transform: translateY(3vh) scale(1.03); }
         .bg-image--blurred { transform: scale(1.05); filter: blur(25px) brightness(0.35); }
         .bg-image--hidden  { opacity:0; }
-        
-        /* ── VIDEO ── */
-        .main-video {
-          position:absolute; inset:0;
-          width:100%; height:100%;
-          object-fit:cover;
-          z-index:1;
-          opacity:0;
-          transition: opacity 0.4s ease;
-          pointer-events:none;
-        }
+        .main-video { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:1; opacity:0; transition: opacity 0.4s ease; pointer-events:none; }
         .main-video--visible { opacity:1; }
-        
-        /* ── UI LAYER ── */
-        .ui-layer {
-          position:absolute; inset:0;
-          width:100%; height:100%;
-          pointer-events:none;
-          transition: opacity 0.35s ease;
-          z-index:10;
-        }
+        .ui-layer { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; transition: opacity 0.35s ease; z-index:10; }
         .ui-layer--hidden { opacity:0; pointer-events:none; }
-        
-        /* ── INTRO ── */
-        .intro-wrap {
-          position:absolute; bottom:12vh; left:4vw;
-          pointer-events:none;
-          filter: drop-shadow(0px 4px 24px rgba(0,0,0,0.95));
-          max-width: 85vw;
-        }
-        .intro-eye {
-          font-family:'Rajdhani',sans-serif; font-weight:400;
-          font-size:clamp(0.68rem,1vw,0.85rem);
-          color:rgba(125,244,255,0.45);
-          letter-spacing:0.35em; text-transform:uppercase;
-          margin-bottom:1.5rem;
-        }
-        .intro-title {
-          font-family:'Cormorant Garamond',serif; font-weight:400;
-          font-size:clamp(3rem, 6.5vw, 6rem);
-          color:#ffffff; letter-spacing:-0.03em;
-          text-transform:none; line-height:0.95;
-        }
+
+        /* INTRO */
+        .intro-wrap { position:absolute; bottom:12vh; left:4vw; pointer-events:none; filter: drop-shadow(0px 4px 24px rgba(0,0,0,0.95)); max-width: 85vw; }
+        .intro-eye { font-family:'Rajdhani',sans-serif; font-weight:400; font-size:clamp(0.68rem,1vw,0.85rem); color:rgba(125,244,255,0.45); letter-spacing:0.35em; text-transform:uppercase; margin-bottom:1.5rem; }
+        .intro-title { font-family:'Cormorant Garamond',serif; font-weight:400; font-size:clamp(3rem, 6.5vw, 6rem); color:#ffffff; letter-spacing:-0.03em; text-transform:none; line-height:0.95; }
         .intro-accent { font-style:italic; font-weight:700; color:rgba(125,244,255,0.9); padding-right:0.1em; }
         .intro-bold-blue { font-weight:700; color:rgba(125,244,255,0.9); }
-        .intro-sub {
-          display:block; font-family:'Cormorant Garamond',serif;
-          font-style:italic; font-weight:300;
-          font-size:clamp(1.2rem, 1.8vw, 1.6rem);
-          color:rgba(255,255,255,0.65);
-          letter-spacing:0.02em; text-transform:none;
-          margin-top:2.5rem;
-          border-left:1px solid rgba(125,244,255,0.3);
-          padding-left:1rem;
-        }
-        .pulse-hint {
-          position:absolute; bottom:5.5vh; left:50%;
-          transform:translateX(-50%);
-          display:flex; flex-direction:column; align-items:center; gap:6px;
-          pointer-events:none;
-        }
-        .pulse-bar {
-          width:1px; height:42px;
-          background:rgba(125,244,255,0.35);
-          animation:pulsebar 2.2s ease-in-out infinite;
-        }
-        .pulse-label {
-          font-family:'Rajdhani',sans-serif;
-          font-size:0.56rem; letter-spacing:0.38em;
-          color:rgba(125,244,255,0.32); text-transform:uppercase;
-        }
-        @keyframes pulsebar {
-          0%,100%{opacity:0.15;transform:scaleY(0.5)}
-          50%{opacity:0.7;transform:scaleY(1)}
-        }
-        
-        /* ── INTERFACCIA SFERE ── */
-        .pin {
-          position:absolute; display:flex; align-items:center; gap:14px;
-          opacity:0; animation:pinIn 0.65s ease forwards; pointer-events:auto;
-        }
-        @keyframes pinIn {
-          from{opacity:0;transform:translateY(12px)}
-          to{opacity:1;transform:translateY(0)}
-        }
+        .intro-sub { display:block; font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:300; font-size:clamp(1.2rem, 1.8vw, 1.6rem); color:rgba(255,255,255,0.65); letter-spacing:0.02em; text-transform:none; margin-top:2.5rem; border-left:1px solid rgba(125,244,255,0.3); padding-left:1rem; }
+        .pulse-hint { position:absolute; bottom:5.5vh; left:50%; transform:translateX(-50%); display:flex; flex-direction:column; align-items:center; gap:6px; pointer-events:none; }
+        .pulse-bar { width:1px; height:42px; background:rgba(125,244,255,0.35); animation:pulsebar 2.2s ease-in-out infinite; }
+        .pulse-label { font-family:'Rajdhani',sans-serif; font-size:0.56rem; letter-spacing:0.38em; color:rgba(125,244,255,0.32); text-transform:uppercase; }
+        @keyframes pulsebar { 0%,100%{opacity:0.15;transform:scaleY(0.5)} 50%{opacity:0.7;transform:scaleY(1)} }
+
+        /* SFERE */
+        .pin { position:absolute; display:flex; align-items:center; gap:14px; opacity:0; animation:pinIn 0.65s ease forwards; pointer-events:auto; }
+        @keyframes pinIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
         .pin--orchestra { top:16%; left:38%; animation-delay:0.2s; }
         .pin--cern      { top:50%; left:58%; animation-delay:0.08s; }
         .pin--pallavolo { top:62%; left:22%; animation-delay:0.35s; }
         .pin__line { height:1px; width:4.5vw; min-width:40px; }
         .line-to-right { background:linear-gradient(to right, rgba(125,244,255,0.45), transparent); }
         .line-to-left  { background:linear-gradient(to left, rgba(125,244,255,0.45), transparent); }
-        .card {
-          background:rgba(4,12,22,0.45); backdrop-filter:blur(16px);
-          -webkit-backdrop-filter:blur(16px);
-          border:1px solid rgba(125,244,255,0.25);
-          padding:1.25rem 1.6rem 1.35rem;
-          text-decoration:none; display:block;
-          transition:border-color 0.4s, background 0.4s, transform 0.35s, filter 0.4s;
-          min-width:185px; cursor:pointer;
-        }
-        .card:hover {
-          border-color:rgba(125,244,255,0.6); background:rgba(4,18,32,0.6);
-          transform:translateY(-5px); filter:drop-shadow(0 0 18px rgba(125,244,255,0.35));
-        }
-        .card__idx {
-          font-family:'Cormorant Garamond',serif; font-style:italic; font-size:0.7rem;
-          color:rgba(125,244,255,0.45); letter-spacing:0.28em; margin-bottom:0.25rem;
-        }
-        .card__name {
-          font-family:'Rajdhani',sans-serif; font-weight:400;
-          font-size:clamp(1.05rem,1.8vw,1.4rem); color:rgba(255,255,255,0.95);
-          letter-spacing:0.15em; text-transform:uppercase; margin-bottom:0.2rem;
-        }
+        .card { background:rgba(4,12,22,0.45); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); border:1px solid rgba(125,244,255,0.25); padding:1.25rem 1.6rem 1.35rem; text-decoration:none; display:block; transition:border-color 0.4s, background 0.4s, transform 0.35s, filter 0.4s; min-width:185px; cursor:pointer; }
+        .card:hover { border-color:rgba(125,244,255,0.6); background:rgba(4,18,32,0.6); transform:translateY(-5px); filter:drop-shadow(0 0 18px rgba(125,244,255,0.35)); }
+        .card__idx { font-family:'Cormorant Garamond',serif; font-style:italic; font-size:0.7rem; color:rgba(125,244,255,0.45); letter-spacing:0.28em; margin-bottom:0.25rem; }
+        .card__name { font-family:'Rajdhani',sans-serif; font-weight:400; font-size:clamp(1.05rem,1.8vw,1.4rem); color:rgba(255,255,255,0.95); letter-spacing:0.15em; text-transform:uppercase; margin-bottom:0.2rem; }
         .card__note { font-family:'Cormorant Garamond',serif; font-style:italic; font-size:0.8rem; color:rgba(255,255,255,0.4); }
-        .card__cta {
-          margin-top:0.75rem; font-family:'Rajdhani',sans-serif;
-          font-size:0.65rem; letter-spacing:0.3em;
-          color:rgba(125,244,255,0.35); text-transform:uppercase; transition:color 0.3s;
-        }
+        .card__cta { margin-top:0.75rem; font-family:'Rajdhani',sans-serif; font-size:0.65rem; letter-spacing:0.3em; color:rgba(125,244,255,0.35); text-transform:uppercase; transition:color 0.3s; }
         .card:hover .card__cta { color:rgba(125,244,255,0.75); }
-        .nav-hint {
-          position:absolute; bottom:5vh; left:50%; transform:translateX(-50%);
-          font-family:'Rajdhani',sans-serif; font-size:0.55rem; letter-spacing:0.38em;
-          color:rgba(125,244,255,0.28); text-transform:uppercase; pointer-events:none;
+
+        /* contenitore mobile per le sfere */
+        .spheres-mobile-row {
+          display: contents; /* su desktop non esiste, i pin restano assoluti */
         }
-        .back-hint {
-          position:absolute; bottom:5vh; right:5vw;
-          font-family:'Rajdhani',sans-serif; font-size:0.55rem; letter-spacing:0.32em;
-          color:rgba(255,255,255,0.16); text-transform:uppercase; pointer-events:none;
+
+        /* su schermi bassi (landscape mobile) o stretti: row in basso */
+        @media (max-height: 500px), (max-width: 600px) {
+          .spheres-mobile-row {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: flex-end;
+            gap: 8px;
+            position: absolute;
+            bottom: 68px; /* sopra la barra touch */
+            left: 0; right: 0;
+          }
+          .pin {
+            position: static !important;
+            transform: none !important;
+            animation: pinIn 0.5s ease forwards;
+          }
+          .pin__line { display: none; }
+          .card {
+            min-width: 0;
+            padding: 0.5rem 0.75rem;
+          }
+          .card__note { display: none; }
+          .card__cta  { display: none; }
+          .card__idx  { display: none; }
+          .card__name { font-size: 0.75rem; letter-spacing: 0.1em; }
         }
-        
-        /* ── POST COLLISIONE ── */
-        .post-wrap {
-          position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
-          padding:0 10vw; pointer-events:none;
-          background:radial-gradient(ellipse 80% 75% at 50% 50%, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.0) 100%);
-        }
+        .nav-hint { position:absolute; bottom:5vh; left:50%; transform:translateX(-50%); font-family:'Rajdhani',sans-serif; font-size:0.55rem; letter-spacing:0.38em; color:rgba(125,244,255,0.28); text-transform:uppercase; pointer-events:none; white-space:nowrap; }
+        .back-hint { position:absolute; bottom:5vh; right:5vw; font-family:'Rajdhani',sans-serif; font-size:0.55rem; letter-spacing:0.32em; color:rgba(255,255,255,0.16); text-transform:uppercase; pointer-events:none; }
+
+        /* POST COLLISIONE */
+        .post-wrap { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; padding:0 10vw; pointer-events:none; background:radial-gradient(ellipse 80% 75% at 50% 50%, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.0) 100%); }
         .post-block { max-width:72vw; text-align:center; display:flex; flex-direction:column; align-items:center; gap:0; }
-        .post-question {
-          font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:400;
-          font-size:clamp(2.4rem, 5vw, 5.6rem); color:#ffffff; line-height:1.22; letter-spacing:-0.01em;
-          text-shadow: 0 2px 4px rgba(0,0,0,1), 0 4px 16px rgba(0,0,0,0.95), 0 8px 40px rgba(0,0,0,0.9), 0 0 80px rgba(0,0,0,0.8), 0 0 120px rgba(0,4,8,0.7);
-        }
-        .post-question em {
-          color:rgba(125,244,255,1); font-style:italic;
-          text-shadow: 0 2px 4px rgba(0,0,0,1), 0 4px 20px rgba(0,0,0,0.95), 0 0 40px rgba(125,244,255,0.25);
-        }
+        .post-question { font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:400; font-size:clamp(2.4rem, 5vw, 5.6rem); color:#ffffff; line-height:1.22; letter-spacing:-0.01em; text-shadow: 0 2px 4px rgba(0,0,0,1), 0 4px 16px rgba(0,0,0,0.95), 0 8px 40px rgba(0,0,0,0.9), 0 0 80px rgba(0,0,0,0.8), 0 0 120px rgba(0,4,8,0.7); }
+        .post-question em { color:rgba(125,244,255,1); font-style:italic; text-shadow: 0 2px 4px rgba(0,0,0,1), 0 4px 20px rgba(0,0,0,0.95), 0 0 40px rgba(125,244,255,0.25); }
         .post-question-break { display:block; height:clamp(1.6rem, 2.8vw, 2.6rem); }
-        .post-question-small {
-          font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:300;
-          font-size:clamp(1.5rem, 2.8vw, 3rem); color:rgba(125,244,255,0.7); line-height:1.3;
-          margin-top:clamp(1rem, 2vw, 2rem); letter-spacing:0.04em;
-          text-shadow: 0 2px 6px rgba(0,0,0,1), 0 4px 20px rgba(0,0,0,0.95), 0 0 50px rgba(125,244,255,0.2);
-        }
-        .post-nav {
-          margin-top:6vh; font-family:'Rajdhani',sans-serif; font-size:0.55rem;
-          letter-spacing:0.38em; color:rgba(125,244,255,0.28); text-transform:uppercase;
-          pointer-events:none; text-shadow:0 1px 8px rgba(0,0,0,0.9);
-        }
-        
-        /* ── MODULI SOTTOPAGINE ── */
-        .sub-window {
-          position:fixed; inset:0; width:100vw; height:100vh;
-          display:grid; grid-template-columns:1.1fr 1.3fr;
-          padding:8vh 6vw; gap:6vw; z-index:50; pointer-events:auto; overflow-y:auto;
-        }
-        .sub-close {
-          position:absolute; top:4vh; left:6vw; background:none; border:none;
-          font-family:'Rajdhani',sans-serif; font-size:0.65rem; color:rgba(255,255,255,0.4);
-          letter-spacing:0.35em; text-transform:uppercase; cursor:pointer;
-          transition:color 0.3s, transform 0.3s;
-        }
+        .post-question-small { font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:300; font-size:clamp(1.5rem, 2.8vw, 3rem); color:rgba(125,244,255,0.7); line-height:1.3; margin-top:clamp(1rem, 2vw, 2rem); letter-spacing:0.04em; text-shadow: 0 2px 6px rgba(0,0,0,1), 0 4px 20px rgba(0,0,0,0.95), 0 0 50px rgba(125,244,255,0.2); }
+        .post-nav { margin-top:6vh; font-family:'Rajdhani',sans-serif; font-size:0.55rem; letter-spacing:0.38em; color:rgba(125,244,255,0.28); text-transform:uppercase; pointer-events:none; text-shadow:0 1px 8px rgba(0,0,0,0.9); }
+
+        /* SOTTOPAGINE */
+        .sub-window { position:fixed; inset:0; width:100vw; height:100vh; display:grid; grid-template-columns:1.1fr 1.3fr; padding:8vh 6vw; gap:6vw; z-index:50; pointer-events:auto; overflow-y:auto; }
+        .sub-close { position:absolute; top:4vh; left:6vw; background:none; border:none; font-family:'Rajdhani',sans-serif; font-size:0.65rem; color:rgba(255,255,255,0.4); letter-spacing:0.35em; text-transform:uppercase; cursor:pointer; transition:color 0.3s, transform 0.3s; }
         .sub-close:hover { color:#7df4ff; transform:translateX(-4px); }
         .sub-left-content { display:flex; flex-direction:column; justify-content:center; }
-        .sub-tag {
-          font-family:'Rajdhani',sans-serif; font-size:0.65rem; color:#7df4ff; opacity:0.6;
-          letter-spacing:0.4em; text-transform:uppercase; margin-bottom:1.5rem;
-        }
-        .sub-headline {
-          font-family:'Cormorant Garamond',serif; font-weight:300;
-          font-size:clamp(2rem, 3.8vw, 3.6rem); color:#fff;
-          line-height:1.05; letter-spacing:-0.01em; margin-bottom:2.5rem;
-        }
-        .sub-text {
-          font-family:'Cormorant Garamond',serif; font-style:italic;
-          font-size:clamp(1.05rem, 1.4vw, 1.3rem); color:rgba(255,255,255,0.5); line-height:1.75;
-        }
+        .sub-tag { font-family:'Rajdhani',sans-serif; font-size:0.65rem; color:#7df4ff; opacity:0.6; letter-spacing:0.4em; text-transform:uppercase; margin-bottom:1.5rem; }
+        .sub-headline { font-family:'Cormorant Garamond',serif; font-weight:300; font-size:clamp(2rem, 3.8vw, 3.6rem); color:#fff; line-height:1.05; letter-spacing:-0.01em; margin-bottom:2.5rem; }
+        .sub-text { font-family:'Cormorant Garamond',serif; font-style:italic; font-size:clamp(1.05rem, 1.4vw, 1.3rem); color:rgba(255,255,255,0.5); line-height:1.75; }
         .photo-grid { position:relative; width:100%; height:100%; display:flex; align-items:center; justify-content:center; }
-        .sub-img {
-          position:absolute; object-fit:cover; border:1px solid rgba(255,255,255,0.15);
-          filter:drop-shadow(0 15px 35px rgba(0,0,0,0.8));
-          transition:transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.4s;
-        }
+        .sub-img { position:absolute; object-fit:cover; border:1px solid rgba(255,255,255,0.15); filter:drop-shadow(0 15px 35px rgba(0,0,0,0.8)); transition:transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.4s; }
         .sub-img:hover { transform: scale(1.03) translateY(-5px) !important; border-color:rgba(125,244,255,0.4); z-index:10 !important; }
         .img-cern-1 { width:55%; height:45%; top:10%; left:0; z-index:2; }
         .img-cern-2 { width:32%; height:55%; bottom:8%; right:5%; z-index:1; }
@@ -399,30 +245,13 @@ export default function Page() {
         .img-vly-2 { width:45%; height:35%; top:5%; right:0; z-index:2; }
         .img-vly-3 { width:48%; height:38%; bottom:5%; right:10%; z-index:3; }
 
-        /* ── MOBILE TOUCH CONTROLS ── */
-        .mobile-controls {
-          display:none;
-          position:fixed; bottom:0; left:0; right:0;
-          z-index:20; padding:0 0 env(safe-area-inset-bottom,0);
-          pointer-events:none;
-        }
-        .mobile-bar {
-          display:flex; align-items:stretch; height:56px;
-          background:rgba(0,0,0,0.55); backdrop-filter:blur(12px);
-          border-top:1px solid rgba(125,244,255,0.12);
-        }
-        .mob-btn {
-          flex:1; background:none; border:none; color:rgba(125,244,255,0.55);
-          font-family:'Rajdhani',sans-serif; font-size:0.6rem; letter-spacing:0.3em;
-          text-transform:uppercase; cursor:pointer; pointer-events:auto;
-          transition:background 0.2s, color 0.2s;
-          display:flex; align-items:center; justify-content:center; gap:6px;
-        }
+        /* MOBILE */
+        .mobile-controls { display:none; position:fixed; bottom:0; left:0; right:0; z-index:20; padding:0 0 env(safe-area-inset-bottom,0); pointer-events:none; }
+        .mobile-bar { display:flex; align-items:stretch; height:56px; background:rgba(0,0,0,0.55); backdrop-filter:blur(12px); border-top:1px solid rgba(125,244,255,0.12); }
+        .mob-btn { flex:1; background:none; border:none; color:rgba(125,244,255,0.55); font-family:'Rajdhani',sans-serif; font-size:0.6rem; letter-spacing:0.3em; text-transform:uppercase; cursor:pointer; pointer-events:auto; transition:background 0.2s, color 0.2s; display:flex; align-items:center; justify-content:center; gap:6px; }
         .mob-btn:active { background:rgba(125,244,255,0.08); color:rgba(125,244,255,0.9); }
         .mob-btn--fwd { border-left:1px solid rgba(125,244,255,0.1); }
         .mob-divider { width:1px; background:rgba(125,244,255,0.1); flex-shrink:0; }
-
-        /* hint adattivo: desktop mostra "spazio", mobile mostra "tocca" */
         .hint-desktop { display:inline; }
         .hint-mobile  { display:none; }
 
@@ -430,7 +259,6 @@ export default function Page() {
           .mobile-controls { display:block; }
           .hint-desktop { display:none; }
           .hint-mobile  { display:inline; }
-          /* su mobile abbassa gli hint testuali per non sovrapporsi alla barra */
           .pulse-hint { bottom:calc(5.5vh + 56px); }
           .nav-hint   { bottom:calc(5vh + 56px); }
           .back-hint  { bottom:calc(5vh + 56px); }
@@ -439,14 +267,12 @@ export default function Page() {
       `}</style>
 
       <div className="scene">
-        {/* IMMAGINE DI SFONDO (statica, sempre presente sotto il video) */}
         <img
           src={bgImage()}
           className={`bg-image${isShifted ? " bg-image--shifted" : ""}${isBlurred ? " bg-image--blurred" : ""}${isPlaying ? " bg-image--hidden" : ""}`}
           alt=""
         />
 
-        {/* VIDEO (visibile solo quando in riproduzione) */}
         <video
           ref={videoRef}
           className={`main-video${isPlaying ? " main-video--visible" : ""}`}
@@ -454,9 +280,8 @@ export default function Page() {
           preload="none"
         />
 
-        {/* ── UI LAYER ── */}
         <div className={`ui-layer${uiVisible ? "" : " ui-layer--hidden"}`}>
-          {/* INTRO */}
+
           {ui === "intro" && (
             <>
               <div className="intro-wrap">
@@ -479,39 +304,37 @@ export default function Page() {
             </>
           )}
 
-          {/* SFERE */}
           {ui === "spheres" && (
             <>
-              <div className="pin pin--orchestra">
-                <div className="card" onClick={() => openSub("orchestra")}>
-                  <p className="card__idx">II.</p>
-                  <p className="card__name">Orchestra</p>
-                  <p className="card__note">quando il molteplice risuona</p>
-                  <p className="card__cta">scopri →</p>
+              <div className="spheres-mobile-row">
+                <div className="pin pin--orchestra">
+                  <div className="card" onClick={() => openSub("orchestra")}>
+                    <p className="card__idx">II.</p>
+                    <p className="card__name">Orchestra</p>
+                    <p className="card__note">quando il molteplice risuona</p>
+                    <p className="card__cta">scopri →</p>
+                  </div>
+                  <div className="pin__line line-to-right" />
                 </div>
-                <div className="pin__line line-to-right" />
-              </div>
-
-              <div className="pin pin--cern">
-                <div className="card" onClick={() => openSub("cern")}>
-                  <p className="card__idx">I.</p>
-                  <p className="card__name">CERN</p>
-                  <p className="card__note">ciò che esiste si rivela nell&apos;urto</p>
-                  <p className="card__cta">scopri →</p>
+                <div className="pin pin--cern">
+                  <div className="card" onClick={() => openSub("cern")}>
+                    <p className="card__idx">I.</p>
+                    <p className="card__name">CERN</p>
+                    <p className="card__note">ciò che esiste si rivela nell&apos;urto</p>
+                    <p className="card__cta">scopri →</p>
+                  </div>
+                  <div className="pin__line line-to-right" />
                 </div>
-                <div className="pin__line line-to-right" />
-              </div>
-
-              <div className="pin pin--pallavolo">
-                <div className="pin__line line-to-left" />
-                <div className="card" onClick={() => openSub("pallavolo")}>
-                  <p className="card__idx">III.</p>
-                  <p className="card__name">Pallavolo</p>
-                  <p className="card__note">l&apos;io come variabile dipendente</p>
-                  <p className="card__cta">scopri →</p>
+                <div className="pin pin--pallavolo">
+                  <div className="pin__line line-to-left" />
+                  <div className="card" onClick={() => openSub("pallavolo")}>
+                    <p className="card__idx">III.</p>
+                    <p className="card__name">Pallavolo</p>
+                    <p className="card__note">l&apos;io come variabile dipendente</p>
+                    <p className="card__cta">scopri →</p>
+                  </div>
                 </div>
               </div>
-
               <div className="nav-hint">
                 <span className="hint-desktop">[ spazio ] continua · [ ← ] indietro</span>
                 <span className="hint-mobile">[ swipe o barra sotto ] naviga</span>
@@ -519,7 +342,6 @@ export default function Page() {
             </>
           )}
 
-          {/* OBLIQUE */}
           {ui === "oblique" && (
             <>
               <div className="nav-hint">
@@ -533,7 +355,6 @@ export default function Page() {
             </>
           )}
 
-          {/* POST COLLISIONE */}
           {ui === "postcollision" && (
             <div className="post-wrap">
               <div className="post-block">
@@ -556,19 +377,15 @@ export default function Page() {
           )}
         </div>
 
-        {/* ── SOTTOPAGINE ── */}
         {ui === "subpage" && activeSub && (
           <div className="sub-window">
             <button className="sub-close" onClick={closeSub}>← Torna alla plancia</button>
-            
             {activeSub === "cern" && (
               <>
                 <div className="sub-left-content">
                   <p className="sub-tag">Sezione I // Ricerca & Struttura</p>
                   <h2 className="sub-headline">Ciò che Esiste<br/>si Rivela nell&apos;Urto</h2>
-                  <p className="sub-text">
-                    Nel tunnel, nulla viene creato. Viene estratto — strappato alla simmetria originaria con energia sufficiente a rompere ciò che sembrava intero. Ho capito al CERN che capire la realtà non significa osservarla: significa avere il coraggio di distruggerla per vedere cosa rimane. Le discipline scientifiche sono i miei acceleratori: vettori con cui forzo la materia del reale fino a che non rivela la propria struttura.
-                  </p>
+                  <p className="sub-text">Nel tunnel, nulla viene creato. Viene estratto — strappato alla simmetria originaria con energia sufficiente a rompere ciò che sembrava intero. Ho capito al CERN che capire la realtà non significa osservarla: significa avere il coraggio di distruggerla per vedere cosa rimane. Le discipline scientifiche sono i miei acceleratori: vettori con cui forzo la materia del reale fino a che non rivela la propria struttura.</p>
                 </div>
                 <div className="photo-grid">
                   <img src="/personal/cern_1.jpg" className="sub-img img-cern-1" alt="Cern Tunnel" />
@@ -576,15 +393,12 @@ export default function Page() {
                 </div>
               </>
             )}
-            
             {activeSub === "orchestra" && (
               <>
                 <div className="sub-left-content">
                   <p className="sub-tag">Sezione II // Geometria del Suono</p>
                   <h2 className="sub-headline">Quando il Molteplice<br/>Risuona</h2>
-                  <p className="sub-text">
-                    Ogni corda vibra secondo equazioni precise — frequenza, tensione, risonanza. Ma la musica non emerge dalla fisica: emerge dall&apos;accordo tra corpi distinti che rinunciano al proprio caos individuale. Suonare in orchestra è stato il primo esperimento in cui ho capito che la complessità non si controlla, si abita. L&apos;armonia non è un punto di arrivo: è una legge che si sceglie di rispettare.
-                  </p>
+                  <p className="sub-text">Ogni corda vibra secondo equazioni precise — frequenza, tensione, risonanza. Ma la musica non emerge dalla fisica: emerge dall&apos;accordo tra corpi distinti che rinunciano al proprio caos individuale. Suonare in orchestra è stato il primo esperimento in cui ho capito che la complessità non si controlla, si abita. L&apos;armonia non è un punto di arrivo: è una legge che si sceglie di rispettare.</p>
                 </div>
                 <div className="photo-grid">
                   <img src="/personal/orchestra_1.jpg" className="sub-img img-orch-1" alt="Concerto Chiesa" />
@@ -593,15 +407,12 @@ export default function Page() {
                 </div>
               </>
             )}
-            
             {activeSub === "pallavolo" && (
               <>
                 <div className="sub-left-content">
                   <p className="sub-tag">Sezione III // Dinamica dei Corpi</p>
                   <h2 className="sub-headline">L&apos;Io come<br/>Variabile Dipendente</h2>
-                  <p className="sub-text">
-                    Ogni schiacciata è un vettore — direzione, modulo, intensità. Ma nessun vettore agisce nel vuoto: ogni gesto è la risposta a un campo di forze umane in continua ridefinizione. Ho imparato sul parquet che la forza individuale è nulla senza la sincronizzazione della squadra. Il campo da gioco è stato il laboratorio in cui ho scoperto che l&apos;io non è una costante: è una funzione degli altri.
-                  </p>
+                  <p className="sub-text">Ogni schiacciata è un vettore — direzione, modulo, intensità. Ma nessun vettore agisce nel vuoto: ogni gesto è la risposta a un campo di forze umane in continua ridefinizione. Ho imparato sul parquet che la forza individuale è nulla senza la sincronizzazione della squadra. Il campo da gioco è stato il laboratorio in cui ho scoperto che l&apos;io non è una costante: è una funzione degli altri.</p>
                 </div>
                 <div className="photo-grid">
                   <img src="/personal/pallavolo_1.jpg" className="sub-img img-vly-1" alt="Battuta Salto" />
@@ -613,7 +424,6 @@ export default function Page() {
           </div>
         )}
 
-        {/* ── BARRA TOUCH MOBILE (visibile solo su touch device) ── */}
         {ui !== "subpage" && (
           <div className="mobile-controls">
             <div className="mobile-bar">

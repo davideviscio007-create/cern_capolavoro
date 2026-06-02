@@ -305,6 +305,16 @@ export default function Page() {
           .back-hint  { bottom:calc(5vh + 40px); }
           .post-nav   { margin-top:4vh; }
         }
+
+        /* POST-COLLISIONE su mobile landscape: testo ridotto per stare tutto in schermo */
+        @media (hover: none) and (pointer: coarse) and (orientation: landscape) {
+          .post-wrap { padding: 0 6vw; padding-bottom: 48px; }
+          .post-block { max-width: 90vw; gap: 0; }
+          .post-question { font-size: clamp(1.1rem, 3.2vh, 2rem); line-height: 1.18; }
+          .post-question-break { height: clamp(0.5rem, 1.2vh, 1rem); }
+          .post-question-small { font-size: clamp(0.85rem, 2.2vh, 1.4rem); margin-top: clamp(0.4rem, 1vh, 0.8rem); }
+          .post-nav { margin-top: 1.5vh; font-size: 0.5rem; }
+        }
       `}</style>
 
       <div className="scene">

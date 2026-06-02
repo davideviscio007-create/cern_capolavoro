@@ -98,7 +98,6 @@ export default function Page() {
 
     const onTouchEnd = (e: TouchEvent) => {
       if (uiRef.current === "subpage") return;
-      // ignora se il touch è partito da una card o bottone
       const target = touchStartTarget.current as HTMLElement | null;
       if (target && (target.closest(".card") || target.closest(".mob-btn") || target.closest(".sub-close"))) return;
 
@@ -181,38 +180,55 @@ export default function Page() {
         .card__cta { margin-top:0.75rem; font-family:'Rajdhani',sans-serif; font-size:0.65rem; letter-spacing:0.3em; color:rgba(125,244,255,0.35); text-transform:uppercase; transition:color 0.3s; }
         .card:hover .card__cta { color:rgba(125,244,255,0.75); }
 
-        /* contenitore mobile per le sfere */
+        /* Contenitore mobile per le sfere */
         .spheres-mobile-row {
-          display: contents; /* su desktop non esiste, i pin restano assoluti */
+          display: contents;
         }
 
-        /* su schermi bassi (landscape mobile) o stretti: row in basso */
-        @media (max-height: 500px), (max-width: 600px) {
+        /* PORTRAIT mobile (schermo stretto - verticale) */
+        @media (max-width: 600px) {
           .spheres-mobile-row {
-            display: flex;
-            flex-direction: row;
-            justify-content: center;
-            align-items: flex-end;
-            gap: 8px;
-            position: absolute;
-            bottom: 68px; /* sopra la barra touch */
-            left: 0; right: 0;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: flex-end !important;
+            align-items: center !important;
+            gap: 8px !important;
+            position: absolute !important;
+            bottom: 55px !important;
+            left: 0 !important; right: 0 !important;
+            z-index: 25 !important;
+            padding: 0 5vw !important;
+            pointer-events: auto !important;
           }
-          .pin {
-            position: static !important;
-            transform: none !important;
-            animation: pinIn 0.5s ease forwards;
-          }
-          .pin__line { display: none; }
-          .card {
-            min-width: 0;
-            padding: 0.5rem 0.75rem;
-          }
-          .card__note { display: none; }
-          .card__cta  { display: none; }
-          .card__idx  { display: none; }
-          .card__name { font-size: 0.75rem; letter-spacing: 0.1em; }
+          .pin { position: static !important; transform: none !important; width: 100% !important; max-width: 290px !important; opacity: 1 !important; }
+          .pin__line { display: none !important; }
+          .card { min-width: 0 !important; width: 100% !important; padding: 0.6rem 1rem !important; background:rgba(4,12,22,0.75) !important; text-align: center !important; }
+          .card__note, .card__cta, .card__idx { display: none !important; }
+          .card__name { font-size: 0.85rem !important; margin: 0 !important; }
         }
+
+        /* LANDSCAPE mobile (schermo basso - orizzontale) */
+        @media (max-height: 500px) and (min-width: 500px) {
+          .spheres-mobile-row {
+            display: flex !important;
+            flex-direction: row !important;
+            justify-content: center !important;
+            align-items: flex-end !important;
+            gap: 12px !important;
+            position: absolute !important;
+            bottom: 45px !important; /* Spostato leggermente sopra la barra dei controlli */
+            left: 0 !important; right: 0 !important;
+            z-index: 25 !important;
+            padding: 0 4vw !important;
+            pointer-events: auto !important;
+          }
+          .pin { position: static !important; transform: none !important; flex: 1 !important; max-width: 150px !important; opacity: 1 !important; }
+          .pin__line { display: none !important; }
+          .card { min-width: 0 !important; width: 100% !important; padding: 0.5rem 0.8rem !important; background:rgba(4,12,22,0.85) !important; text-align:center !important; }
+          .card__note, .card__cta, .card__idx { display: none !important; }
+          .card__name { font-size: 0.75rem !important; letter-spacing: 0.08em !important; margin-bottom: 0 !important; }
+        }
+
         .nav-hint { position:absolute; bottom:5vh; left:50%; transform:translateX(-50%); font-family:'Rajdhani',sans-serif; font-size:0.55rem; letter-spacing:0.38em; color:rgba(125,244,255,0.28); text-transform:uppercase; pointer-events:none; white-space:nowrap; }
         .back-hint { position:absolute; bottom:5vh; right:5vw; font-family:'Rajdhani',sans-serif; font-size:0.55rem; letter-spacing:0.32em; color:rgba(255,255,255,0.16); text-transform:uppercase; pointer-events:none; }
 
@@ -245,13 +261,13 @@ export default function Page() {
         .img-vly-2 { width:45%; height:35%; top:5%; right:0; z-index:2; }
         .img-vly-3 { width:48%; height:38%; bottom:5%; right:10%; z-index:3; }
 
-        /* MOBILE */
-        .mobile-controls { display:none; position:fixed; bottom:0; left:0; right:0; z-index:20; padding:0 0 env(safe-area-inset-bottom,0); pointer-events:none; }
-        .mobile-bar { display:flex; align-items:stretch; height:56px; background:rgba(0,0,0,0.55); backdrop-filter:blur(12px); border-top:1px solid rgba(125,244,255,0.12); }
-        .mob-btn { flex:1; background:none; border:none; color:rgba(125,244,255,0.55); font-family:'Rajdhani',sans-serif; font-size:0.6rem; letter-spacing:0.3em; text-transform:uppercase; cursor:pointer; pointer-events:auto; transition:background 0.2s, color 0.2s; display:flex; align-items:center; justify-content:center; gap:6px; }
+        /* MOBILE CONTROLS */
+        .mobile-controls { display:none; position:fixed; bottom:0; left:0; right:0; z-index:30; padding:0 0 env(safe-area-inset-bottom,0); pointer-events:none; }
+        .mobile-bar { display:flex; align-items:stretch; height:40px; background:rgba(0,0,0,0.65); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); border-top:1px solid rgba(125,244,255,0.15); }
+        .mob-btn { flex:1; background:none; border:none; color:rgba(125,244,255,0.6); font-family:'Rajdhani',sans-serif; font-size:0.6rem; letter-spacing:0.28em; text-transform:uppercase; cursor:pointer; pointer-events:auto; transition:background 0.2s, color 0.2s; display:flex; align-items:center; justify-content:center; gap:6px; }
         .mob-btn:active { background:rgba(125,244,255,0.08); color:rgba(125,244,255,0.9); }
-        .mob-btn--fwd { border-left:1px solid rgba(125,244,255,0.1); }
-        .mob-divider { width:1px; background:rgba(125,244,255,0.1); flex-shrink:0; }
+        .mob-btn--fwd { border-left:1px solid rgba(125,244,255,0.08); }
+        .mob-divider { width:1px; background:rgba(125,244,255,0.08); flex-shrink:0; }
         .hint-desktop { display:inline; }
         .hint-mobile  { display:none; }
 
@@ -259,9 +275,9 @@ export default function Page() {
           .mobile-controls { display:block; }
           .hint-desktop { display:none; }
           .hint-mobile  { display:inline; }
-          .pulse-hint { bottom:calc(5.5vh + 56px); }
-          .nav-hint   { bottom:calc(5vh + 56px); }
-          .back-hint  { bottom:calc(5vh + 56px); }
+          .pulse-hint { bottom:calc(5.5vh + 40px); }
+          .nav-hint   { bottom:calc(5vh + 40px); }
+          .back-hint  { bottom:calc(5vh + 40px); }
           .post-nav   { margin-top:4vh; }
         }
       `}</style>
@@ -385,7 +401,7 @@ export default function Page() {
                 <div className="sub-left-content">
                   <p className="sub-tag">Sezione I // Ricerca & Struttura</p>
                   <h2 className="sub-headline">Ciò che Esiste<br/>si Rivela nell&apos;Urto</h2>
-                  <p className="sub-text">Nel tunnel, nulla viene creato. Viene estratto — strappato alla simmetria originaria con energia sufficiente a rompere ciò che sembrava intero. Ho capito al CERN che capire la realtà non significa osservarla: significa avere il coraggio di distruggerla per vedere cosa rimane. Le discipline scientifiche sono i miei acceleratori: vettori con cui forzo la materia del reale fino a che non rivela la propria struttura.</p>
+                  <p className="sub-text">Nel tunnel, nulla viene creato. Viene estratto — strappato alla simmetria originaria con energia sufficiente a rompercio che sembrava intero. Ho capito al CERN che capire la realtà non significa osservarla: significa avere il coraggio di distruggerla per vedere cosa rimane. Le discipline scientifiche sono i miei acceleratori: vettori con cui forzo la materia del reale fino a che non rivela la propria struttura.</p>
                 </div>
                 <div className="photo-grid">
                   <img src="/personal/cern_1.jpg" className="sub-img img-cern-1" alt="Cern Tunnel" />
@@ -398,7 +414,7 @@ export default function Page() {
                 <div className="sub-left-content">
                   <p className="sub-tag">Sezione II // Geometria del Suono</p>
                   <h2 className="sub-headline">Quando il Molteplice<br/>Risuona</h2>
-                  <p className="sub-text">Ogni corda vibra secondo equazioni precise — frequenza, tensione, risonanza. Ma la musica non emerge dalla fisica: emerge dall&apos;accordo tra corpi distinti che rinunciano al proprio caos individuale. Suonare in orchestra è stato il primo esperimento in cui ho capito che la complessità non si controlla, si abita. L&apos;armonia non è un punto di arrivo: è una legge che si sceglie di rispettare.</p>
+                  <p className="sub-text">Ogni corda vibra secondo equazioni precise — frequenza, tensione, risonanza. Ma la musica non emerge dalla fisica: emerge dall&apos;accordo tra corpi distinti che rinunciano al proprio caos individualie. Suonare in orchestra è stato il primo esperimento in cui ho capito che la complessità non si controlla, si abita. L&apos;armonia non è un punto di arrivo: è una legge che si sceglie di rispettare.</p>
                 </div>
                 <div className="photo-grid">
                   <img src="/personal/orchestra_1.jpg" className="sub-img img-orch-1" alt="Concerto Chiesa" />

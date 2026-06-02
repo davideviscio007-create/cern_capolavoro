@@ -186,50 +186,72 @@ export default function Page() {
           display: contents;
         }
 
-        /* PORTRAIT mobile */
-        @media (max-width: 600px) and (orientation: portrait) {
-          .spheres-mobile-row {
+        /* PORTRAIT mobile — mostra overlay "ruota il dispositivo" */
+        .rotate-hint { display: none; }
+        @media (hover: none) and (pointer: coarse) and (orientation: portrait) {
+          .rotate-hint {
             display: flex;
             flex-direction: column;
-            justify-content: flex-end;
             align-items: center;
-            gap: 6px;
-            position: absolute;
-            bottom: 48px;
-            left: 0; right: 0;
-            z-index: 15;
-            padding: 0 3vw;
+            justify-content: center;
+            gap: 1.4rem;
+            position: fixed;
+            inset: 0;
+            z-index: 200;
+            background: rgba(0,0,0,0.88);
+            backdrop-filter: blur(8px);
+            pointer-events: none;
           }
-          .pin { position: static !important; transform: none !important; width: 100%; max-width: 320px; }
-          .pin__line { display: none; }
-          .card { min-width: 0; width: 100%; padding: 0.6rem 1rem; background:rgba(4,12,22,0.75); }
-          .card__note { display: none; }
-          .card__cta  { display: none; }
-          .card__name { font-size: 0.85rem; }
+          .rotate-hint__icon {
+            font-size: 3rem;
+            animation: rotateAnim 2.5s ease-in-out infinite;
+          }
+          @keyframes rotateAnim {
+            0%   { transform: rotate(0deg); }
+            40%  { transform: rotate(90deg); }
+            60%  { transform: rotate(90deg); }
+            100% { transform: rotate(0deg); }
+          }
+          .rotate-hint__text {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.65rem;
+            letter-spacing: 0.38em;
+            color: rgba(125,244,255,0.6);
+            text-transform: uppercase;
+            text-align: center;
+          }
+          .rotate-hint__sub {
+            font-family: 'Cormorant Garamond', serif;
+            font-style: italic;
+            font-size: 1rem;
+            color: rgba(255,255,255,0.3);
+            text-align: center;
+          }
         }
 
-        /* LANDSCAPE mobile */
-        @media (orientation: landscape) and (max-height: 500px) {
+        /* LANDSCAPE mobile — copre tutti i telefoni reali (fino a ~900px di altezza in landscape) */
+        @media (hover: none) and (pointer: coarse) and (orientation: landscape) {
           .spheres-mobile-row {
             display: flex;
             flex-direction: row;
             justify-content: center;
-            align-items: flex-end;
-            gap: 8px;
+            align-items: center;
+            gap: 10px;
             position: absolute;
-            bottom: 48px;
+            top: 50%;
+            transform: translateY(-50%);
             left: 0; right: 0;
             z-index: 15;
-            padding: 0 4vw;
+            padding: 0 5vw;
           }
           .mobile-controls { display: block; }
-          .pin { position: static !important; transform: none !important; flex: 1; max-width: 160px; }
+          .pin { position: static !important; transform: none !important; flex: 1; max-width: 200px; }
           .pin__line { display: none; }
-          .card { min-width: 0; padding: 0.4rem 0.6rem; background:rgba(4,12,22,0.75); text-align:center; }
+          .card { min-width: 0; padding: 0.55rem 0.8rem; background:rgba(4,12,22,0.82); text-align:center; }
           .card__note { display: none; }
-          .card__cta  { display: none; }
+          .card__cta  { margin-top: 0.4rem; display: block; }
           .card__idx  { display: none; }
-          .card__name { font-size: 0.7rem; letter-spacing: 0.08em; margin-bottom: 0; }
+          .card__name { font-size: 0.8rem; letter-spacing: 0.1em; margin-bottom: 0.15rem; }
         }
 
         .nav-hint { position:absolute; bottom:5vh; left:50%; transform:translateX(-50%); font-family:'Rajdhani',sans-serif; font-size:0.55rem; letter-spacing:0.38em; color:rgba(125,244,255,0.28); text-transform:uppercase; pointer-events:none; white-space:nowrap; }
@@ -452,6 +474,13 @@ export default function Page() {
             </div>
           </div>
         )}
+
+        {/* Overlay portrait-only: visibile solo via CSS su mobile portrait */}
+        <div className="rotate-hint">
+          <span className="rotate-hint__icon">📱</span>
+          <span className="rotate-hint__text">Ruota il dispositivo</span>
+          <span className="rotate-hint__sub">Questa esperienza è ottimizzata<br/>per la modalità orizzontale</span>
+        </div>
 
       </div>
     </>

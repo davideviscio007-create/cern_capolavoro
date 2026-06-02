@@ -50,7 +50,7 @@ export default function Page() {
     setUIBoth(newState);
   }, []);
 
-  // ── AVANTI (SPAZIO) ───────────────────────────────────────────────────────
+  // ── AVANTI (SPAZIO / TAP) ───────────────────────────────────────────────────
   const goForward = useCallback(() => {
     const current = uiRef.current;
     if (current === "subpage") return;
@@ -118,6 +118,38 @@ export default function Page() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
+  }, [goForward, goBack]);
+
+  // ── TOUCH (mobile) ────────────────────────────────────────────────────────
+  const touchStartX = useRef<number>(0);
+  const touchStartY = useRef<number>(0);
+
+  useEffect(() => {
+    const onTouchStart = (e: TouchEvent) => {
+      touchStartX.current = e.touches[0].clientX;
+      touchStartY.current = e.touches[0].clientY;
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      if (uiRef.current === "subpage") return;
+      const dx = e.changedTouches[0].clientX - touchStartX.current;
+      const dy = Math.abs(e.changedTouches[0].clientY - touchStartY.current);
+      // swipe orizzontale (almeno 60px, non verticale)
+      if (Math.abs(dx) > 60 && dy < 60) {
+        if (dx < 0) goForward();  // swipe sinistra → avanti
+        else goBack();            // swipe destra → indietro
+      } else if (Math.abs(dx) < 15 && dy < 15) {
+        // tap semplice → avanti
+        goForward();
+      }
+    };
+
+    window.addEventListener("touchstart", onTouchStart, { passive: true });
+    window.addEventListener("touchend", onTouchEnd, { passive: true });
+    return () => {
+      window.removeEventListener("touchstart", onTouchStart);
+      window.removeEventListener("touchend", onTouchEnd);
+    };
   }, [goForward, goBack]);
 
   // ── SOTTOPAGINE ───────────────────────────────────────────────────────────
@@ -366,6 +398,44 @@ export default function Page() {
         .img-vly-1 { width:32%; height:62%; top:8%; left:5%; z-index:1; }
         .img-vly-2 { width:45%; height:35%; top:5%; right:0; z-index:2; }
         .img-vly-3 { width:48%; height:38%; bottom:5%; right:10%; z-index:3; }
+
+        /* ── MOBILE TOUCH CONTROLS ── */
+        .mobile-controls {
+          display:none;
+          position:fixed; bottom:0; left:0; right:0;
+          z-index:20; padding:0 0 env(safe-area-inset-bottom,0);
+          pointer-events:none;
+        }
+        .mobile-bar {
+          display:flex; align-items:stretch; height:56px;
+          background:rgba(0,0,0,0.55); backdrop-filter:blur(12px);
+          border-top:1px solid rgba(125,244,255,0.12);
+        }
+        .mob-btn {
+          flex:1; background:none; border:none; color:rgba(125,244,255,0.55);
+          font-family:'Rajdhani',sans-serif; font-size:0.6rem; letter-spacing:0.3em;
+          text-transform:uppercase; cursor:pointer; pointer-events:auto;
+          transition:background 0.2s, color 0.2s;
+          display:flex; align-items:center; justify-content:center; gap:6px;
+        }
+        .mob-btn:active { background:rgba(125,244,255,0.08); color:rgba(125,244,255,0.9); }
+        .mob-btn--fwd { border-left:1px solid rgba(125,244,255,0.1); }
+        .mob-divider { width:1px; background:rgba(125,244,255,0.1); flex-shrink:0; }
+
+        /* hint adattivo: desktop mostra "spazio", mobile mostra "tocca" */
+        .hint-desktop { display:inline; }
+        .hint-mobile  { display:none; }
+
+        @media (hover: none) and (pointer: coarse) {
+          .mobile-controls { display:block; }
+          .hint-desktop { display:none; }
+          .hint-mobile  { display:inline; }
+          /* su mobile abbassa gli hint testuali per non sovrapporsi alla barra */
+          .pulse-hint { bottom:calc(5.5vh + 56px); }
+          .nav-hint   { bottom:calc(5vh + 56px); }
+          .back-hint  { bottom:calc(5vh + 56px); }
+          .post-nav   { margin-top:4vh; }
+        }
       `}</style>
 
       <div className="scene">
@@ -401,7 +471,10 @@ export default function Page() {
               </div>
               <div className="pulse-hint">
                 <div className="pulse-bar" />
-                <span className="pulse-label">spazio per iniziare</span>
+                <span className="pulse-label">
+                  <span className="hint-desktop">spazio per iniziare</span>
+                  <span className="hint-mobile">tocca per iniziare</span>
+                </span>
               </div>
             </>
           )}
@@ -439,15 +512,24 @@ export default function Page() {
                 </div>
               </div>
 
-              <div className="nav-hint">[ spazio ] continua · [ ← ] indietro</div>
+              <div className="nav-hint">
+                <span className="hint-desktop">[ spazio ] continua · [ ← ] indietro</span>
+                <span className="hint-mobile">[ swipe o barra sotto ] naviga</span>
+              </div>
             </>
           )}
 
           {/* OBLIQUE */}
           {ui === "oblique" && (
             <>
-              <div className="nav-hint">[ spazio ] esegui collisione</div>
-              <div className="back-hint">← indietro</div>
+              <div className="nav-hint">
+                <span className="hint-desktop">[ spazio ] esegui collisione</span>
+                <span className="hint-mobile">[ tocca avanti ] esegui collisione</span>
+              </div>
+              <div className="back-hint">
+                <span className="hint-desktop">← indietro</span>
+                <span className="hint-mobile">indietro</span>
+              </div>
             </>
           )}
 
@@ -465,7 +547,10 @@ export default function Page() {
                   E adesso —
                 </p>
                 <p className="post-question-small">verso cosa, adesso?</p>
-                <div className="post-nav">[ ← ] riavvolgi l&apos;impatto</div>
+                <div className="post-nav">
+                  <span className="hint-desktop">[ ← ] riavvolgi l&apos;impatto</span>
+                  <span className="hint-mobile">riavvolgi l&apos;impatto</span>
+                </div>
               </div>
             </div>
           )}
@@ -527,6 +612,18 @@ export default function Page() {
             )}
           </div>
         )}
+
+        {/* ── BARRA TOUCH MOBILE (visibile solo su touch device) ── */}
+        {ui !== "subpage" && (
+          <div className="mobile-controls">
+            <div className="mobile-bar">
+              <button className="mob-btn" onClick={goBack}>← indietro</button>
+              <div className="mob-divider" />
+              <button className="mob-btn mob-btn--fwd" onClick={goForward}>avanti →</button>
+            </div>
+          </div>
+        )}
+
       </div>
     </>
   );
